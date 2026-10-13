@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dropbox Images</title>
+  <style>
+    body { font-family: Arial; margin: 30px; }
+    button { padding: 6px 12px; cursor: pointer; }
+    .image { display: inline-block; margin: 10px; }
+    img { width: 150px; height: 120px; object-fit: cover; }
+  </style>
+</head>
+<body>
+  <h2>Dropbox Image Manager</h2>
+
+  <input type="file" id="file" accept="image/*">
+  <button onclick="uploadImage()">Upload</button>
+
+  <p id="message"></p>
+  <hr>
+  <h3>My Images</h3>
+  <div id="gallery"></div>
+
+  <script>
+    async function uploadImage() {
+      const file = document.getElementById("file").files[0];
+      if (!file) return alert("Select an image");
+
+      const form = new FormData();
+      form.append("image", file);
+
+      const res = await fetch("/upload", {
+        method: "POST",
+        body: form
+      });
+
+      document.getElementById("message").textContent =
+        await res.text();
+
+      if (res.ok) loadImages();
+    }
+
+    async function loadImages() {
+      const gallery = document.getElementById("gallery");
+      const res = await fetch("/images");
+
+      if (!res.ok) {
+        gallery.textContent = "Could not load images";
+        return;
+      }
+
+      const files = await res.json();
+      gallery.replaceChildren();
+
+      files.forEach(file => {
+        const url = "/image?path=" + encodeURIComponent(file.path);
+
+        const div = document.createElement("div");
+        div.className = "image";
+
+        const img = document.createElement("img");
+        img.src = url;
+
+        const name = document.createElement("p");
+        name.textContent = file.name;
+
+        const link = document.createElement("a");
+        link.href = url + "&download=1";
+        link.textContent = "Download";
+
+        div.append(img, name, link);
+        gallery.appendChild(div);
+      });
+    }
+
+    loadImages();
+  </script>
+</body>
+</html>
